@@ -1,6 +1,8 @@
 spring:
   application:
     name: ye-ai-agent
+    profiles:
+      active: local
 server:
   port: 8123
   servlet:
@@ -18,6 +20,7 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.qiuye.yeaiagent.controller
+
 # knife4j???????????????
 knife4j:
   enable: true
