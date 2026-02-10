@@ -5,12 +5,18 @@ import com.qiuye.yeaiagent.advisor.CheckBannedAdvisor;
 import com.qiuye.yeaiagent.advisor.MyLoggerAdvisor;
 import com.qiuye.yeaiagent.advisor.ReReadingAdvisor;
 import com.qiuye.yeaiagent.chatmemory.FileBaseChatMemory;
+import com.qiuye.yeaiagent.rag.LoveAppRagCustomAdvisorFactory;
+import com.qiuye.yeaiagent.rag.QueryRewrite;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -47,7 +53,7 @@ public class LoveApp{
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         new MyLoggerAdvisor(),
                         new ReReadingAdvisor(),
-                        new CheckBannedAdvisor()
+//                        new CheckBannedAdvisor()
                 )
                 .build();
     }
@@ -75,6 +81,41 @@ public class LoveApp{
         return chatResponse;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    @Resource
+    private VectorStore loveAppVectorStore;
+
+    @Resource
+    private QueryRewrite QueryRewrite;
+
+
+
+    public String doChatWithRag(String message, String chatId){
+        //对用户的查询进行改写，改写后更适合检索相关知识
+        String queryRewritePrompt = QueryRewrite.doQueryWrite(message);
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .user(queryRewritePrompt)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(QuestionAnswerAdvisor.builder(loveAppVectorStore).searchRequest(SearchRequest.builder().build()).build())
+                .advisors(LoveAppRagCustomAdvisorFactory.createDocumentRetrieverAdvisor(loveAppVectorStore, "已婚"))
+                .call()
+                .chatResponse();
+        return chatResponse.getResult().getOutput().getText();
+    }
 
 }
 
