@@ -15,6 +15,7 @@ import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvi
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
@@ -39,7 +40,7 @@ public class LoveApp{
 
     public LoveApp(ChatModel dashscopeChatModel) {
         //初始化基于文件的记忆对话
-        String filePath = System.getProperty("user.dir") + "/chat-memories/";
+        String filePath = System.getProperty("user.dir") + "/tmp/"+ "/chat-memories/";
         ChatMemory chatMemory = new FileBaseChatMemory(filePath);
 //        //初始化基于内存的记忆对话
 //        MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
@@ -52,7 +53,7 @@ public class LoveApp{
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         new MyLoggerAdvisor(),
-                        new ReReadingAdvisor(),
+                        new ReReadingAdvisor()
 //                        new CheckBannedAdvisor()
                 )
                 .build();
@@ -101,6 +102,7 @@ public class LoveApp{
     @Resource
     private QueryRewrite QueryRewrite;
 
+    @Resource ToolCallback[] allTools;
 
 
     public String doChatWithRag(String message, String chatId){
@@ -112,6 +114,7 @@ public class LoveApp{
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .advisors(QuestionAnswerAdvisor.builder(loveAppVectorStore).searchRequest(SearchRequest.builder().build()).build())
                 .advisors(LoveAppRagCustomAdvisorFactory.createDocumentRetrieverAdvisor(loveAppVectorStore, "已婚"))
+                .toolCallbacks(allTools)
                 .call()
                 .chatResponse();
         return chatResponse.getResult().getOutput().getText();
