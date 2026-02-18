@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: ye-image-search-mcp-server
+  profiles:
+    active: stdio
+
+server:
+    port: 8127
+
+# application.yml
+
