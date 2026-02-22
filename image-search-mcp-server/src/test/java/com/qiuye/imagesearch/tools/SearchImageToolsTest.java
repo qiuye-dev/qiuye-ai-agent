@@ -15,7 +15,7 @@ class SearchImageToolsTest {
 
     @Test
     void searchImageTool() {
-        String result = searchImageTools.searchImageTool("computer");
+        String result = searchImageTools.searchImage("computer");
         System.out.println(result);
         Assertions.assertNotNull(result);
     }

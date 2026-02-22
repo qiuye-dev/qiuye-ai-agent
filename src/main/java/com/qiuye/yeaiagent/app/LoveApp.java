@@ -99,7 +99,8 @@ public class LoveApp{
     @Resource
     private QueryRewrite QueryRewrite;
 
-    @Resource ToolCallback[] allTools;
+    @Resource
+    ToolCallback[] allTools;
 
 
     public String doChatWithRag(String message, String chatId){
@@ -122,9 +123,8 @@ public class LoveApp{
 
 
 
-
     @Resource
-    private SyncMcpToolCallbackProvider toolCallbackProvider;
+    private ToolCallbackProvider toolCallbackProvider;
 
 
     public String doChatWithMCP(String message, String chatId){

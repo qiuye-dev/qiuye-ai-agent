@@ -10,6 +10,16 @@
         "image-search-mcp-server/target/image-search-mcp-server-0.0.1-SNAPSHOT.jar"
       ],
       "env": {}
+    },
+    "amap-maps": {
+      "command": "npx.cmd",
+      "args": [
+        "-y",
+        "@amap/amap-maps-mcp-server"
+      ],
+      "env": {
+        "AMAP_MAPS_API_KEY": "你的 API-KEY"
+      }
     }
   }
 }

@@ -59,7 +59,7 @@ class LoveAppTest {
     @Test
     void doChatWithMCP() {
         String chatId = UUID.randomUUID().toString();
-        String message = "帮我推荐10张可以哄另一半开心的图片";
+        String message = "我的另一半居住在上海静安区，请帮我找到5公里内合适的约会地点";
         String answer =  loveApp.doChatWithMCP(message, chatId);
         System.out.println(answer);
         Assertions.assertNotNull(answer);
