@@ -27,7 +27,7 @@ public abstract class BaseAgent {
 
     //提示
     private String systemPrompt;
-    private String nestStepPrompt;
+    private String nextStepPrompt;
 
     //状态
     private AgentStatus status = AgentStatus.IDLE;
@@ -41,6 +41,9 @@ public abstract class BaseAgent {
 
     //memory
     private List<Message> messageList = new ArrayList<>();
+
+    //重复阈值
+    private int duplicateThreshold = 2;
 
     public String run(String userPrompt){
         //基础校验
@@ -63,6 +66,9 @@ public abstract class BaseAgent {
                 currentSteps = stepNumber;
                 log.info("Executing step"+ stepNumber + "/" + maxSteps);
                 String stepResult = step();
+                if(isStuck()){
+                    handleStuckState();
+                }
                 String result = "Step " + stepNumber + ": " + stepResult;
                 results.add(result);
             }
@@ -79,6 +85,41 @@ public abstract class BaseAgent {
         }
 
     }
+
+
+    protected void handleStuckState(){
+        String stuckPrompt = "Repeated responses have been observed. " +
+                "Consider a new strategy to avoid repeating the ineffective paths that have already been tried";
+        nextStepPrompt = stuckPrompt + "\n" + (this.nextStepPrompt != null ? this.nextStepPrompt : "");
+        log.info("Agent detected stuck state. Added prompt:" + stuckPrompt);
+    }
+
+
+    /**
+     * 检查是否进入了循环
+     * @return true表示进入 false表示没进
+     */
+    protected boolean isStuck(){
+        //当前的消息列表
+        List<Message> messages = this.messageList;
+        if(messages.size() < 2){
+            return false;
+        }
+        Message lastMessage = messages.get(messages.size() - 1);
+        if(lastMessage.getText() == null || lastMessage.getText().isEmpty()){
+            return false;
+        }
+        //计算重复出现的消息
+        int duplicateCount = 0;
+        for(int i = messages.size() - 2; i >= 0; i--){
+            Message message = messages.get(i);
+            if(message.getText().equals(lastMessage.getText())){
+                duplicateCount++;
+            }
+        }
+        return duplicateCount >= duplicateThreshold;
+    }
+
 
     /**
      * 单个步骤执行

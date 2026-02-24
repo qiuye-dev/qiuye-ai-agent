@@ -21,6 +21,7 @@ public class ToolRegistration {
         TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminateTool terminateTool = new TerminateTool();
+        AskHuman askHuman = new AskHuman();
         return ToolCallbacks.from(
                 fileOperationTool,
                 webSearchTool,
@@ -28,7 +29,8 @@ public class ToolRegistration {
                 resourceDownloadTool,
                 terminalOperationTool,
                 pdfGenerationTool,
-                terminateTool
+                terminateTool,
+                askHuman
         );
     }
 }

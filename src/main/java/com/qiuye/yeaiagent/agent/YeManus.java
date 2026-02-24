@@ -27,7 +27,7 @@ public class YeManus extends ToolCallAgent {
                 If you want to stop the interaction at any point, use the `terminate` tool/function call.  
                 """;
 
-        this.setNestStepPrompt(NEXT_STEP_PROMPT);
+        this.setNextStepPrompt(NEXT_STEP_PROMPT);
         this.setMaxSteps(20);
         // 初始化客户端
         ChatClient chatClient = ChatClient.builder(dashscopeChatModel)

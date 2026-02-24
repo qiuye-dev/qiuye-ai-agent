@@ -1,6 +1,7 @@
 package com.qiuye.yeaiagent.agent;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.qiuye.yeaiagent.agent.model.AgentStatus;
@@ -20,6 +21,7 @@ import org.springframework.ai.tool.ToolCallback;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 /**
@@ -53,8 +55,8 @@ public class ToolCallAgent extends ReActAgent{
 
     @Override
     public boolean think() {
-        if(getNestStepPrompt() != null && !StrUtil.isEmpty(getNestStepPrompt())){
-            UserMessage userMessage = new UserMessage(getNestStepPrompt());
+        if(getNextStepPrompt() != null && !StrUtil.isEmpty(getNextStepPrompt())){
+            UserMessage userMessage = new UserMessage(getNextStepPrompt());
             getMessageList().add(userMessage);
         }
         List<Message> messageList = getMessageList();
@@ -80,6 +82,24 @@ public class ToolCallAgent extends ReActAgent{
                         return String.format("工具名称: %s, 参数: %s", toolCall.name(), toolCall.arguments());
                     }).collect(Collectors.joining("\n"));
             log.info(toolCallInfo);
+            //检查agent是否调用了AskHuman工具,并获取问题参数
+            String question = toolCallList.stream()
+                    .filter(toolCall -> "askHuman".equals(toolCall.name()))
+                    .map(AssistantMessage.ToolCall::arguments)
+                    .findFirst()
+                    .filter(ObjUtil::isNotNull)
+                    .orElse(null);
+            if(StrUtil.isNotEmpty(question)){
+                //向用户输出问题
+                System.out.println("智能体需要你的帮助,问题: " + question);
+                //提取用户输入
+                Scanner scanner = new Scanner(System.in);
+                String userAnswer = scanner.nextLine();
+                //将用户输入添加到消息列表
+                UserMessage userMessage = new UserMessage("用户回答" + userAnswer);
+                getMessageList().add(userMessage);
+                return true;
+            }
             //如果没有调用工具添加助手消息到消息上下文
             if(toolCallList.isEmpty()){
                 getMessageList().add(assistantMessage);
