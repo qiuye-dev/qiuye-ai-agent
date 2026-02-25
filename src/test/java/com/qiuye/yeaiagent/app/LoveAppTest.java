@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,10 +62,20 @@ class LoveAppTest {
 
     @Test
     void doChatWithMCP() {
+        SseEmitter sseEmitter = new SseEmitter(180000L);
         String chatId = UUID.randomUUID().toString();
         String message = "我的另一半居住在上海静安区，请帮我找到5公里内合适的约会地点";
-        String answer =  loveApp.doChatWithMCP(message, chatId);
-        System.out.println(answer);
-        Assertions.assertNotNull(answer);
+        loveApp.doChatWithStream(message, chatId)
+                .subscribe(chunk -> {
+                            try {
+                                sseEmitter.send(chunk);
+                            } catch (IOException e) {
+                                sseEmitter.completeWithError(e);
+                            }
+                        },
+                        //处理错误
+                        sseEmitter::completeWithError,
+                        //处理完成
+                        sseEmitter::complete);
     }
 }

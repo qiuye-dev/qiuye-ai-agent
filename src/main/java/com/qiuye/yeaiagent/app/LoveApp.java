@@ -1,7 +1,7 @@
 package com.qiuye.yeaiagent.app;
 
 
-import com.qiuye.yeaiagent.advisor.CheckBannedAdvisor;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.qiuye.yeaiagent.advisor.MyLoggerAdvisor;
 import com.qiuye.yeaiagent.advisor.ReReadingAdvisor;
 import com.qiuye.yeaiagent.chatmemory.FileBaseChatMemory;
@@ -15,12 +15,13 @@ import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvi
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -85,10 +86,14 @@ public class LoveApp{
     }
 
 
-
-
-
-
+    public Flux<String> doChatWithStream(String message, String chatId){
+        return chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                .stream()
+                .content();
+    }
 
 
 
@@ -118,28 +123,11 @@ public class LoveApp{
         return chatResponse.getResult().getOutput().getText();
     }
 
-
-
-
-
-
     @Resource
     private ToolCallbackProvider toolCallbackProvider;
 
 
-    public String doChatWithMCP(String message, String chatId){
-        //对用户的查询进行改写，改写后更适合检索相关知识
-        String queryRewritePrompt = QueryRewrite.doQueryWrite(message);
-        ChatResponse chatResponse = chatClient
-                .prompt()
-                .user(queryRewritePrompt)
-                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
-                .advisors(QuestionAnswerAdvisor.builder(loveAppVectorStore).searchRequest(SearchRequest.builder().build()).build())
-                .toolCallbacks(toolCallbackProvider.getToolCallbacks())
-                .call()
-                .chatResponse();
-        return chatResponse.getResult().getOutput().getText();
-    }
+
 
 }
 

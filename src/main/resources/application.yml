@@ -8,6 +8,11 @@ spring:
       client:
         stdio:
           servers-configuration: classpath:mcp-servers.json
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
 
 server:
   port: 8123
