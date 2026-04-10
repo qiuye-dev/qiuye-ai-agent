@@ -10,9 +10,12 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 抽象基础代理类,用于管理代理状态和执行循环
@@ -83,7 +86,75 @@ public abstract class BaseAgent {
         } finally {
             this.clear();
         }
+    }
 
+    public SseEmitter runStream(String userPrompt) throws Exception {
+        SseEmitter sseEmitter = new SseEmitter(300000L);
+
+        CompletableFuture.runAsync(() -> {
+            //基础校验
+            try {
+                if (StrUtil.isBlank(userPrompt)) {
+                    sseEmitter.send("Cannot run agent with empty user prompt");
+                    sseEmitter.complete();
+                    return;
+                }
+                if (this.status != AgentStatus.IDLE) {
+                    sseEmitter.send("Cannot run agent from status: " + this.status);
+                    sseEmitter.complete();
+                    return;
+                }
+                //执行循环
+                try {
+                    for (int i = 0; i < maxSteps && status != AgentStatus.FINISHED; i++) {
+                        int stepNumber = i + 1;
+                        currentSteps = stepNumber;
+                        log.info("Executing step"+ stepNumber + "/" + maxSteps);
+                        String stepResult = step();
+                        if(isStuck()){
+                            handleStuckState();
+                        }
+                        String result = "Step " + stepNumber + ": " + stepResult;
+                        sseEmitter.send(result);
+                    }
+                    //检查是否超出步骤
+                    if(currentSteps >= maxSteps){
+                        status = AgentStatus.FINISHED;
+                        sseEmitter.send("Terminated:Reached maxSteps " + "(" + maxSteps + ")");
+                    }
+
+                } catch (Exception e) {
+                    log.error("Error occurred while running agent", e);
+                    this.status = AgentStatus.ERROR;
+                    try {
+                        sseEmitter.send("Error occurred while running agent: " + e.getMessage());
+                        sseEmitter.complete();
+                    } catch (IOException ex) {
+                        sseEmitter.completeWithError(ex);
+                    }
+                } finally {
+                    this.clear();
+                }
+            }catch (Exception e){
+                sseEmitter.completeWithError(e);
+            }
+        });
+
+        //设置超时处理和完成回溯
+        sseEmitter.onTimeout(() -> {
+            this.status = AgentStatus.ERROR;
+            this.clear();
+            log.error("Agent execution timed out");
+        });
+
+        sseEmitter.onCompletion(() -> {
+            if(this.status == AgentStatus.RUNNING){
+                this.status = AgentStatus.FINISHED;
+            }
+            this.clear();
+            log.info("Agent execution completed");
+        });
+        return sseEmitter;
     }
 
 

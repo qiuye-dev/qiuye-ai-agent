@@ -20,6 +20,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -29,6 +30,8 @@ import java.util.List;
 @Slf4j
 public class LoveApp{
 
+    @Value("${spring.ai.dashscope.api-key}")
+    private String apiKey;
 
     private final ChatClient chatClient;
 
@@ -92,7 +95,9 @@ public class LoveApp{
                 .user(message)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .stream()
-                .content();
+                .content()
+                .doOnNext(content -> log.debug("Received content: {}", content))
+                .doOnError(error -> log.error("Stream error", error));
     }
 
 
@@ -125,8 +130,6 @@ public class LoveApp{
 
     @Resource
     private ToolCallbackProvider toolCallbackProvider;
-
-
 
 
 }

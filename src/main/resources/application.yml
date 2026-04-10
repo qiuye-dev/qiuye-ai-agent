@@ -8,6 +8,8 @@ spring:
       client:
         stdio:
           servers-configuration: classpath:mcp-servers.json
+  reactor:
+    context-propagation: auto
   data:
     redis:
       host: localhost
@@ -37,4 +39,5 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+
 
